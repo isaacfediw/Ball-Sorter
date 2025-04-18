@@ -1,0 +1,71 @@
+////////////////////////////////////////////////////////////////
+// Demo client server communication
+////////////////////////////////////////////////////////////////
+void serverthread(CServer* server) {
+  // Start server
+  server->start(4618);
+}
+
+void do_clientserver() {
+  char inputchar = 0;
+  std::vector<std::string> cmds;
+
+  cv::VideoCapture vid;
+  CServer server;
+
+  // Start server thread
+  std::thread t(&serverthread, &server);
+  t.detach();
+
+  vid.open(0);
+
+  while (inputchar != 'q') {
+    inputchar = cv::waitKey(100);
+
+    server.get_cmd(cmds);
+    if (cmds.size() > 0) {
+      // Process different commands received by the server
+      for (int i = 0; i < cmds.size(); i++) {
+        if (cmds.at(i) == "im") {
+          std::cout << "\nServer Rx: " << cmds.at(i);
+
+          std::string reply = "Hi there from Server";
+          server.send_string(reply);
+        }
+        else if (cmds.at(i) == "mode") {
+          std::cout << "\nServer Rx: " << cmds.at(i);
+
+          std::string reply = "Mode Changed";
+          server.send_string(reply);
+        }
+        else if (cmds.at(i) == "green") {
+            std::cout << "\nServer Rx: " << cmds.at(i);
+
+            std::string reply = "Sent to Green Bin";
+            server.send_string(reply);
+        }
+        else if (cmds.at(i) == "blue") {
+            std::cout << "\nServer Rx: " << cmds.at(i);
+
+            std::string reply = "Send to Blue Bin";
+            server.send_string(reply);
+        }
+      }
+    }
+
+		// Update server image with the latest camera image
+		if (vid.isOpened() == true) {
+			cv::Mat frame;
+			vid >> frame;
+			if (frame.empty() == false) {
+				imshow("Server Image", frame);
+				process_msg();
+				server.set_txim(frame);
+			}
+		}
+  };
+
+  server.stop();
+  
+  Sleep(100);
+}
